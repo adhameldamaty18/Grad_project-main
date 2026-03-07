@@ -1,28 +1,50 @@
 import threading
-from core.event_bus import containment_queue
-from config import ENABLE_ACTIVE_CONTAINMENT, INTERFACE
-from prevention.containment_engine import ContainmentEngine
-from monitoring.sniffer import clients_map
 
-class ResponseEngine:
-    def start(self):
-        containment = ContainmentEngine(INTERFACE)
+from monitoring.sniffer import start_monitoring
+from detection.threat_manager import ThreatManager
+from prevention.response_engine import ResponseEngine
+from network.ws_client import WSClient
+from network.api_client import APIClient
 
-        while True:
-            # 🚀 بيسحب من طابور الأكشن بس
-            threat = containment_queue.get()
 
-            print("\n🛡️ [Response Engine] Preparing counter-measures...")
+def main():
 
-            if ENABLE_ACTIVE_CONTAINMENT:
-                clients = clients_map.get(threat['event']['bssid'], set())
-                
-                # 🚀 نشغل الهجوم المضاد في Thread منفصل عشان الـ ResponseEngine مايعطلش
-                attack_thread = threading.Thread(
-                    target=containment.contain,
-                    args=(threat['event']['bssid'], clients, threat['event']['channel']),
-                    daemon=True
-                )
-                attack_thread.start()
-            else:
-                print("[Response Engine] Active containment is DISABLED in config.")
+    print("🚀 Starting ZeinaGuard Sensor...")
+
+    # --------------------------------
+    # Authenticate sensor
+    # --------------------------------
+    api = APIClient()
+    token = api.authenticate_sensor()
+
+    # --------------------------------
+    # Start WebSocket
+    # --------------------------------
+    ws = WSClient(token=token)
+
+    ws_thread = threading.Thread(
+        target=ws.connect_to_server,
+        daemon=True
+    )
+    ws_thread.start()
+
+    # --------------------------------
+    # Engines
+    # --------------------------------
+    threat_manager = ThreatManager()
+    response_engine = ResponseEngine()
+
+    t1 = threading.Thread(target=threat_manager.start, daemon=True)
+    t1.start()
+
+    t2 = threading.Thread(target=response_engine.start, daemon=True)
+    t2.start()
+
+    # --------------------------------
+    # Start Sniffer
+    # --------------------------------
+    start_monitoring()
+
+
+if __name__ == "__main__":
+    main()
