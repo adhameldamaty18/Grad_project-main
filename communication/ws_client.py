@@ -5,7 +5,7 @@ from core.event_bus import dashboard_queue
 
 
 class WSClient:
-    def __init__(self, backend_url="http://192.168.1.100:5000", token=None):
+    def __init__(self, backend_url="http://192.168.201.130:5000", token=None):
         self.sio = socketio.Client()
         self.backend_url = backend_url
         self.token = token
@@ -21,32 +21,30 @@ class WSClient:
             print("\n[WebSocket] 🔴 Disconnected from server.")
 
     def connect_to_server(self):
-        if not self.token:
-            print("[WebSocket] Cannot connect without JWT Token.")
-            return
+      if not self.token:
+        print("[WebSocket] Cannot connect without JWT Token.")
+        return
 
-        try:
-            print("[WebSocket] Connecting to server...")
+      try:
+        print("[WebSocket] Connecting to server...")
 
-            self.sio.connect(
-                self.backend_url,
-                headers={"Authorization": f"Bearer {self.token}"}
-            )
+        self.sio.connect(
+            f"{self.backend_url}?token={self.token}",
+            transports=["websocket"]
+        )
 
-            self.is_running = True
+        self.is_running = True
 
-            # Thread يراقب الطابور ويبعت التهديدات
-            listener_thread = threading.Thread(
-                target=self._threat_listener,
-                daemon=True
-            )
-            listener_thread.start()
+        listener_thread = threading.Thread(
+            target=self._threat_listener,
+            daemon=True
+        )
+        listener_thread.start()
 
-            # يخلي الاتصال شغال
-            self.sio.wait()
+        self.sio.wait()
 
-        except Exception as e:
-            print(f"[WebSocket] Connection Error: {e}")
+      except Exception as e:
+        print(f"[WebSocket] Connection Error: {e}")
 
     def _threat_listener(self):
         print("[WebSocket] Listening for threats...")
