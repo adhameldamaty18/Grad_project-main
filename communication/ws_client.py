@@ -1,3 +1,4 @@
+#ws_client.py
 import socketio
 import threading
 import time
@@ -6,7 +7,7 @@ from core.event_bus import dashboard_queue
 
 class WSClient:
     def __init__(self, backend_url="http://192.168.201.130:5000", token=None):
-        self.sio = socketio.Client()
+        self.sio = socketio.Client(logger=True, engineio_logger=True)
         self.backend_url = backend_url
         self.token = token
         self.is_running = False
@@ -29,9 +30,9 @@ class WSClient:
         print("[WebSocket] Connecting to server...")
 
         self.sio.connect(
-            f"{self.backend_url}?token={self.token}",
-            transports=["websocket"]
-        )
+            self.backend_url,
+            transports=["websocket", "polling"]
+)
 
         self.is_running = True
 
