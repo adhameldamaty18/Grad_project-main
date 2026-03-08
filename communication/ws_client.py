@@ -36,11 +36,8 @@ class WSClient:
         print("[WebSocket] Connecting to server...")
 
         self.sio.connect(
-            self.backend_url,
-            transports=["websocket"],
-            headers={
-                "Authorization": f"Bearer {self.token}"
-    }
+           self.backend_url,
+           transports=["websocket"]
 )
 
         self.is_running = True
