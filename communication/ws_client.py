@@ -7,7 +7,13 @@ from core.event_bus import dashboard_queue
 
 class WSClient:
     def __init__(self, backend_url="http://192.168.201.130:5000", token=None):
-        self.sio = socketio.Client(logger=True, engineio_logger=True)
+        self.sio = socketio.Client(
+            logger=True,
+            engineio_logger=True,
+            reconnection=True,
+            reconnection_attempts=5,
+            reconnection_delay=2
+)
         self.backend_url = backend_url
         self.token = token
         self.is_running = False
@@ -31,7 +37,10 @@ class WSClient:
 
         self.sio.connect(
             self.backend_url,
-            transports=["websocket", "polling"]
+            transports=["websocket"],
+            headers={
+                "Authorization": f"Bearer {self.token}"
+    }
 )
 
         self.is_running = True
