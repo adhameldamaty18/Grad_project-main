@@ -1,61 +1,78 @@
-#main.py
+import os
+import socketio
 import threading
+import time
+from core.event_bus import dashboard_queue
 
-from monitoring.sniffer import start_monitoring
-from detection.threat_manager import ThreatManager
-from prevention.response_engine import ResponseEngine
-from communication.ws_client import WSClient
-from communication.api_client import APIClient
+class WSClient:
 
+ def __init__(self, backend_url=None, token=None):
 
-def main():
+    self.backend_url = backend_url or os.getenv("BACKEND_URL", "http://127.0.0.1:5000")
 
-    print("🚀 Starting ZeinaGuard Sensor...")
+    # token optional
+    self.token = token or os.getenv("SENSOR_TOKEN", None)
 
-    # --------------------------------
-    # Authenticate sensor
-    # --------------------------------
-    api = APIClient()
-    token = api.authenticate_sensor()
+    self.is_running = False
 
-    # --------------------------------
-    # Start WebSocket
-    # --------------------------------
-    ws = WSClient(token=token)
-
-    ws_thread = threading.Thread(
-        target=ws.connect_to_server,
-        daemon=True
+    self.sio = socketio.Client(
+        logger=True,
+        engineio_logger=True,
+        reconnection=True,
+        reconnection_attempts=5,
+        reconnection_delay=2
     )
-    ws_thread.start()
 
-    # --------------------------------
-    # Threat Manager
-    # --------------------------------
-    threat_manager = ThreatManager()
+    @self.sio.event
+    def connect():
+        print("\n[WebSocket] 🟢 Connected to ZeinaGuard Backend!")
 
-    t1 = threading.Thread(
-        target=threat_manager.start,
-        daemon=True
-    )
-    t1.start()
+    @self.sio.event
+    def disconnect():
+        print("\n[WebSocket] 🔴 Disconnected from server.")
 
-    # --------------------------------
-    # Response Engine
-    # --------------------------------
-    response_engine = ResponseEngine()
+def connect_to_server(self):
 
-    t2 = threading.Thread(
-        target=response_engine.start,
-        daemon=True
-    )
-    t2.start()
+    try:
 
-    # --------------------------------
-    # Start monitoring
-    # --------------------------------
-    start_monitoring()
+        print(f"[WebSocket] Connecting to {self.backend_url} ...")
 
+        self.sio.connect(
+            self.backend_url,
+            transports=["websocket"]
+        )
 
-if __name__ == "__main__":
-    main()
+        self.is_running = True
+
+        listener_thread = threading.Thread(
+            target=self._threat_listener,
+            daemon=True
+        )
+
+        listener_thread.start()
+
+        self.sio.wait()
+
+    except Exception as e:
+        print(f"[WebSocket] Connection Error: {e}")
+
+def _threat_listener(self):
+
+    print("[WebSocket] Listening for threats...")
+
+    while self.is_running:
+
+        threat = dashboard_queue.get()
+
+        try:
+            self.sio.emit("new_threat", threat)
+            print(f"[WebSocket] 🚀 Threat sent: {threat['event']['ssid']}")
+        except Exception as e:
+            print(f"[WebSocket] Failed to send threat: {e}")
+
+        time.sleep(0.05)
+
+def disconnect_server(self):
+
+    self.is_running = False
+    self.sio.disconnect()
