@@ -5,9 +5,9 @@ import datetime
 class ThreatManager:
     def __init__(self):
         self.engine = RiskEngine()
-        self.history = {}          
-        self.last_status = {}      
-        self.confirmed_rogues = set()  
+        self.history = {}
+        self.last_status = {}
+        self.confirmed_rogues = set()
 
     def print_event(self, event_summary):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
@@ -39,27 +39,22 @@ class ThreatManager:
                 self.print_event(event_summary)
                 self.last_status[bssid] = status
 
-            # تأكيد Rogue بعد 3 مرات
+            # ✅ كل الكود داخل الـ if block بـ indentation صح
             if status in ["SUSPICIOUS", "ROGUE"]:
-
                 threat = {
-                     "status": status,
-                     "score": score,
-                     "reasons": reasons,
-                     "event": event_summary
-    }
+                    "status": status,
+                    "score": score,
+                    "reasons": reasons,
+                    "event": event_summary
+                }  # ✅ الـ closing brace جوه الـ if
 
-    dashboard_queue.put(threat)
+                dashboard_queue.put(threat)  # ✅ جوه الـ if
 
-    if status == "ROGUE" and bssid not in self.confirmed_rogues:
-        self.confirmed_rogues.add(bssid)
-        containment_queue.put(threat)
+                if status == "ROGUE" and bssid not in self.confirmed_rogues:
+                    self.confirmed_rogues.add(bssid)
+                    containment_queue.put(threat)  # ✅ مرة واحدة بس
 
-        print("\n🚨🚨🚨 ROGUE ACCESS POINT CONFIRMED 🚨🚨🚨")
-        print(f"SSID      : {event_summary['ssid']}")
-        print(f"BSSID     : {event_summary['bssid']}")
-        print("=" * 60)
-
-                # 🚀 الرمي في الطابورين بدل طابور واحد
-        containment_queue.put(threat)
-        dashboard_queue.put(threat)
+                    print("\n🚨🚨🚨 ROGUE ACCESS POINT CONFIRMED 🚨🚨🚨")
+                    print(f"SSID  : {event_summary['ssid']}")
+                    print(f"BSSID : {event_summary['bssid']}")
+                    print("=" * 60)
