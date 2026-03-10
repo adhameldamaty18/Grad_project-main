@@ -40,21 +40,26 @@ class ThreatManager:
                 self.last_status[bssid] = status
 
             # تأكيد Rogue بعد 3 مرات
-            if status == "ROGUE" and self.history[bssid] >= 3 and bssid not in self.confirmed_rogues:
-                self.confirmed_rogues.add(bssid)
+            if status in ["SUSPICIOUS", "ROGUE"]:
 
                 threat = {
-                    "status": status,
-                    "score": score,
-                    "reasons": reasons,
-                    "event": event_summary
-                }
+                     "status": status,
+                     "score": score,
+                     "reasons": reasons,
+                     "event": event_summary
+    }
 
-                print("\n🚨🚨🚨 ROGUE ACCESS POINT CONFIRMED 🚨🚨🚨")
-                print(f"SSID      : {event_summary['ssid']}")
-                print(f"BSSID     : {event_summary['bssid']}")
-                print("=" * 60)
+    dashboard_queue.put(threat)
+
+    if status == "ROGUE" and bssid not in self.confirmed_rogues:
+        self.confirmed_rogues.add(bssid)
+        containment_queue.put(threat)
+
+        print("\n🚨🚨🚨 ROGUE ACCESS POINT CONFIRMED 🚨🚨🚨")
+        print(f"SSID      : {event_summary['ssid']}")
+        print(f"BSSID     : {event_summary['bssid']}")
+        print("=" * 60)
 
                 # 🚀 الرمي في الطابورين بدل طابور واحد
-                containment_queue.put(threat)
-                dashboard_queue.put(threat)
+        containment_queue.put(threat)
+        dashboard_queue.put(threat)
